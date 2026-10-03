@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidProgress(data) {
+      return data.keys().hasAll(['userId', 'topicId', 'subjectId', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'topicId', 'subjectId', 'status', 'notes', 'bookmarkedResourceIds', 'updatedAt'])
+        && data.userId is string && data.userId == request.auth.uid
+        && data.topicId is string && data.topicId.size() <= 100
+        && data.subjectId is string && data.subjectId.size() <= 100
+        && data.status in ['not_started', 'in_progress', 'mastered']
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 5000))
+        && (!('bookmarkedResourceIds' in data) || (data.bookmarkedResourceIds is list && data.bookmarkedResourceIds.size() <= 200))
+        && data.updatedAt is string && data.updatedAt.size() <= 50;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['userId', 'topicId', 'title', 'completed', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'topicId', 'title', 'dueDate', 'googleTaskId', 'completed', 'createdAt'])
+        && data.userId is string && data.userId == request.auth.uid
+        && data.topicId is string && data.topicId.size() <= 100
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && (!('dueDate' in data) || (data.dueDate is string && data.dueDate.size() <= 50))
+        && (!('googleTaskId' in data) || (data.googleTaskId is string && data.googleTaskId.size() <= 200))
+        && data.completed is bool
+        && data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User Study Progress
+    match /users/{userId}/studyProgress/{topicId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidId(topicId) && isValidProgress(request.resource.data);
+      allow delete: if isOwner(userId);
+    }
+
+    // User Study Tasks
+    match /users/{userId}/studyTasks/{taskId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidId(taskId) && isValidTask(request.resource.data);
+      allow delete: if isOwner(userId);
+    }
+  }
+}

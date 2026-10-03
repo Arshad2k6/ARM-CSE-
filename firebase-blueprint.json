@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "UserStudyProgress": {
+      "title": "UserStudyProgress",
+      "description": "Tracks a student's preparation progress for a specific TG ECET CSE topic.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user."
+        },
+        "topicId": {
+          "type": "string",
+          "description": "Identifier of the syllabus topic."
+        },
+        "subjectId": {
+          "type": "string",
+          "description": "Identifier of the subject."
+        },
+        "status": {
+          "type": "string",
+          "description": "Study status of the topic.",
+          "enum": ["not_started", "in_progress", "mastered"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal revision notes for the topic.",
+          "maxLength": 5000
+        },
+        "bookmarkedResourceIds": {
+          "type": "array",
+          "description": "Array of verified resource IDs bookmarked by the user."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update."
+        }
+      },
+      "required": ["userId", "topicId", "subjectId", "status", "updatedAt"]
+    },
+    "UserStudyTask": {
+      "title": "UserStudyTask",
+      "description": "Represents a study task linked to a topic and optionally synchronized to Google Tasks.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user."
+        },
+        "topicId": {
+          "type": "string",
+          "description": "Topic ID associated with this study task."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the task.",
+          "maxLength": 200
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date for the revision."
+        },
+        "googleTaskId": {
+          "type": "string",
+          "description": "Google Tasks task ID if synced."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the study task is marked as completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation."
+        }
+      },
+      "required": ["userId", "topicId", "title", "completed", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/studyProgress/{topicId}": {
+      "schema": "UserStudyProgress",
+      "description": "Collection of topic study progress records per user."
+    },
+    "/users/{userId}/studyTasks/{taskId}": {
+      "schema": "UserStudyTask",
+      "description": "Collection of study tasks per user."
+    }
+  }
+}
